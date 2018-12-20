@@ -16,19 +16,19 @@ var connection = mysql.createConnection({
   database : 'heroku_bc855f521588179'
 });
 
-let PDFDocument = require('pdfkit')
+
 let app = require('express')()
 let http = require('http').Server(app)
 let cors = require('cors')
-const fs = require('fs');
-let Report = require('fluentReports').Report;
-let port = process.env.PORT || 3001
-let Firebird = require('node-firebird');
-let CryptoJS = require('crypto-js');
-const { StringDecoder } = require('string_decoder');
-const decoder = new StringDecoder('utf8');
 
-// app.use(cors())
+
+let port = process.env.PORT || 3001
+
+
+const { StringDecoder } = require('string_decoder');
+
+
+app.use(cors())
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
