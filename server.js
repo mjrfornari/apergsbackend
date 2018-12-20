@@ -4,7 +4,7 @@ var mysql      = require('mysql');
 //   host     : 'localhost',
 //   user     : 'root',
 //   password : 'eloperdido',
-//   database : 'apergsdb'
+//   database : 'apergsdb',
 // });
 
 //mysql://b2a54ba1936954:69dd8472@us-cdbr-iron-east-01.cleardb.net/heroku_bc855f521588179?reconnect=true
@@ -13,7 +13,9 @@ var connection = mysql.createConnection({
   host     : 'us-cdbr-iron-east-01.cleardb.net',
   user     : 'b2a54ba1936954',
   password : '69dd8472',
-  database : 'heroku_bc855f521588179'
+  database : 'heroku_bc855f521588179',
+  connectTimeout : 0,
+  connectionLimit : 0
 });
 
 
@@ -65,7 +67,7 @@ app.get('/api/getAssociados',  function (req, res, next) {
 
     connection.query(sql, function (error, results, fields) {
         if (error) throw error;
-
+        // connection.end();
         res.json(results)
     });
     
