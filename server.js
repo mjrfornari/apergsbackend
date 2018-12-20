@@ -28,7 +28,7 @@ let CryptoJS = require('crypto-js');
 const { StringDecoder } = require('string_decoder');
 const decoder = new StringDecoder('utf8');
 
-app.use(cors())
+// app.use(cors())
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
