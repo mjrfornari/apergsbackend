@@ -9,13 +9,13 @@ var mysql      = require('mysql');
 
 //mysql://b2a54ba1936954:69dd8472@us-cdbr-iron-east-01.cleardb.net/heroku_bc855f521588179?reconnect=true
 
-var connection = mysql.createPool({
+ var connection = mysql.createPool({
      connectTimeout : 1000,
      host     : 'us-cdbr-iron-east-01.cleardb.net',
      user     : 'b2a54ba1936954',
      password : '69dd8472',
      database : 'heroku_bc855f521588179'
-});
+ });
 
 
 
@@ -47,6 +47,7 @@ var connection = mysql.createPool({
 let app = require('express')()
 let http = require('http').Server(app)
 let cors = require('cors')
+var Password = require("node-php-password");
 
 
 let port = process.env.PORT || 3001
@@ -85,6 +86,32 @@ http.listen(port, function(){
 })
 
 
+//////////////////////////////////LOGIN APERGS///////////////////////////////
+
+    app.post('/api/login',  function (req, res, next) {
+        let data = req.body
+        let user = data.user || ''
+        let password = data.password || ''
+
+        console.log('teste')
+
+        if ( user !== '' && password !== '' ) {
+            let sql = 'select * from usuarios where login = ?';
+            
+            connection.query(sql, user, function (error, results, fields){
+                
+                if (Password.verify(password, results[0].senha)) {
+                    res.json({authenticated: true, user: results[0].pk_usu})
+                    console.log('logou')
+                } else {
+                    res.json({authenticated: false, user: 0})
+                    console.log('nao logou')
+                }
+                
+            })
+        }
+
+    })
 
 //////////////////////////////////SQLS///////////////////////////////////////
 
@@ -92,12 +119,14 @@ http.listen(port, function(){
 
     //GET
     app.get('/api/getAssociados',  function (req, res, next) {
-        let sql = 'SELECT ass.*, lot.descricao as nomelot, sit.descricao as nomesit from associados ass'+
+        let sql = 'SELECT ass.*, lot.descricao as nomelot, sit.descricao as nomesit, cat.descricao as nomecat from associados ass'+
                 ' left join lotacoes lot on lot.pk_lot = ass.fk_lot '+
-                ' left join situacoes sit on sit.pk_sit = ass.fk_sit '
+                ' left join situacoes sit on sit.pk_sit = ass.fk_sit '+
+                ' left join categorias_associados cat on cat.pk_cat = ass.fk_cat '+
+                ' where fk_asstitular is null '
 
         if (Number(req.query.pk) > 0) {
-            sql = sql + 'where pk_ass = '+(Number(req.query.pk)).toString()
+            sql = sql + 'and pk_ass = '+(Number(req.query.pk)).toString()
         }
 
         connection.query(sql, function (error, results, fields) {
@@ -984,6 +1013,180 @@ http.listen(port, function(){
     app.post('/api/deleteBancos',  function (req, res, next) {
         if (Number(req.query.pk) > 0) {
             let sql = 'delete from BANCOS where pk_bco=? '
+            let pk = Number(req.query.pk)
+            connection.query(sql, pk, function (error, results, fields){
+                if(error) {
+                    res.status(500).json(error)
+                    return console.log(error);
+                }
+                // console.log(mysql.format(sql, pk))
+                console.log('excluiu registro!');
+                console.log(results)
+                res.status(200).json({message: 'Success!', rows: results.affectedRows})
+            });
+        } else {
+            res.status(500).json({ error: 'Código do registro não encontrado!'})
+        }
+    })
+
+//
+
+//Tipos de Serviços
+
+    //GET
+    app.get('/api/getTiposServicos',  function (req, res, next) {
+        let sql = 'SELECT * from Tipos_Servicos ';
+        
+
+        if (Number(req.query.pk) > 0) {
+            sql = sql + 'where pk_ser = '+(Number(req.query.pk)).toString()
+        }
+
+        connection.query(sql, function (error, results, fields) {
+            if (error) throw error;
+
+            res.json(results)
+        });
+        
+
+    })
+
+    //NOVO
+    app.post('/api/novoTiposServicos',  function (req, res, next) {
+        let sql = 'insert into Tipos_Servicos ('
+        let data = req.body
+        let fields = Object.getOwnPropertyNames(data)
+        let values = [Object.values(data)]
+        sql = sql + fields.toString()+') values ?'
+        connection.query(sql, [values], function (error, results, fields){
+            if(error) {
+                res.status(500).json(error)
+                return console.log(error);
+            }
+            console.log('adicionou registros!');
+            res.status(200).json({message: 'Success!', pk: results.insertId})
+        });
+        
+    })
+
+    //EDIT
+    app.post('/api/editTiposServicos',  function (req, res, next) {
+        if (Number(req.query.pk) > 0) {
+            let sql = 'update Tipos_Servicos set '
+            let pk = Number(req.query.pk)
+            let data = req.body
+            let fields = Object.getOwnPropertyNames(data)
+            let teste = fields.join('=?, ')+'=?'
+            let values = Object.values(data)
+            let fieldsnvalues = mysql.format(teste, values)
+            sql = sql + fieldsnvalues + ' where pk_ser=?'
+            connection.query(sql, pk, function (error, results, fields){
+                if(error) {
+                    res.status(500).json(error)
+                    return console.log(error);
+                }
+                // console.log(mysql.format(sql, pk))
+                console.log('alterou registros!');
+                console.log(results)
+                res.status(200).json({message: 'Success!', rows: results.affectedRows})
+            });
+        } else {
+            res.status(500).json({ error: 'Código do registro não encontrado!'})
+        }
+    })
+
+    //DELETE
+    app.post('/api/deleteTiposServicos',  function (req, res, next) {
+        if (Number(req.query.pk) > 0) {
+            let sql = 'delete from Tipos_Servicos where pk_ser=? '
+            let pk = Number(req.query.pk)
+            connection.query(sql, pk, function (error, results, fields){
+                if(error) {
+                    res.status(500).json(error)
+                    return console.log(error);
+                }
+                // console.log(mysql.format(sql, pk))
+                console.log('excluiu registro!');
+                console.log(results)
+                res.status(200).json({message: 'Success!', rows: results.affectedRows})
+            });
+        } else {
+            res.status(500).json({ error: 'Código do registro não encontrado!'})
+        }
+    })
+
+//
+
+//Dependentes
+
+    //GET
+    app.get('/api/getDependentes',  function (req, res, next) {
+        let sql = 'SELECT ass.*, lot.descricao as nomelot, tde.descricao as nomegra, cat.descricao as nomecat from associados ass'+
+                ' left join lotacoes lot on lot.pk_lot = ass.fk_lot '+
+                ' left join tipo_dependentes tde on tde.pk_tde = ass.fk_gra '+
+                ' left join categorias_associados cat on cat.pk_cat = ass.fk_cat '+
+                ' where fk_asstitular is not null '
+
+        if (Number(req.query.pk) > 0) {
+            sql = sql + 'and pk_ass = '+(Number(req.query.pk)).toString()
+        }
+
+        connection.query(sql, function (error, results, fields) {
+            if (error) throw error;
+            res.json(results)
+        });
+        
+
+    })
+
+    //NOVO
+    app.post('/api/novoDependente',  function (req, res, next) {
+        let sql = 'insert into ASSOCIADOS ('
+        let data = req.body
+        let fields = Object.getOwnPropertyNames(data)
+        let values = [Object.values(data)]
+        sql = sql + fields.toString()+') values ?'
+        connection.query(sql, [values], function (error, results, fields){
+            if(error) {
+                res.status(500).json(error)
+                return console.log(error);
+            }
+            console.log('adicionou registros!');
+            res.status(200).json({message: 'Success!', pk: results.insertId})
+        });
+        
+    })
+
+    //EDIT
+    app.post('/api/editDependente',  function (req, res, next) {
+        if (Number(req.query.pk) > 0) {
+            let sql = 'update ASSOCIADOS set '
+            let pk = Number(req.query.pk)
+            let data = req.body
+            let fields = Object.getOwnPropertyNames(data)
+            let teste = fields.join('=?, ')+'=?'
+            let values = Object.values(data)
+            let fieldsnvalues = mysql.format(teste, values)
+            sql = sql + fieldsnvalues + ' where pk_ass=?'
+            connection.query(sql, pk, function (error, results, fields){
+                if(error) {
+                    res.status(500).json(error)
+                    return console.log(error);
+                }
+                // console.log(mysql.format(sql, pk))
+                console.log('alterou registros!');
+                console.log(results)
+                res.status(200).json({message: 'Success!', rows: results.affectedRows})
+            });
+        } else {
+            res.status(500).json({ error: 'Código do registro não encontrado!'})
+        }
+    })
+
+    //DELETE
+    app.post('/api/deleteDependente',  function (req, res, next) {
+        if (Number(req.query.pk) > 0) {
+            let sql = 'delete from ASSOCIADOS where pk_ass=? '
             let pk = Number(req.query.pk)
             connection.query(sql, pk, function (error, results, fields){
                 if(error) {
